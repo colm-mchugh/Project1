@@ -1,2 +1,4 @@
 Welcome to plan2.
 Date: today.
+
+Always be closing.
