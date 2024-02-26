@@ -1,2 +1,42 @@
 Welcome to plan2.
 Date: today.
+
+import sys
+import sqlparse
+import re
+
+def executestmt(ps, nparams):
+  stmt = 'EXPLAIN (verbose) EXECUTE ' + ps + ' ('
+  if (nparams > 0):
+    for i in range(nparams-1):
+      stmt = stmt + ' NULL,'
+    stmt = stmt + ' NULL'
+  stmt = stmt + ');'
+  return stmt
+
+rawsqls = open(sys.argv[1])
+rawsqldict ={}
+
+for rawsql in rawsqls:
+  if not rawsql.startswith('EXPLAIN '):
+    if rawsql not in rawsqldict.keys():
+      rawsqldict[rawsql] = 1
+
+sqltexts=rawsqldict.keys()
+stmts = []
+stmts.append('deallocate all;\n\n')
+
+for i in range(len(sqltexts)):
+  ps = 'ps' + str(i)
+  formatted_qry = sqlparse.format(sqltexts[i], reindent=True, keyword_case='upper') + ';\n'
+  nparams = len(set(re.findall(r'\$\d+', sqltexts[i])))
+  exec_stmt = executestmt(ps, nparams)
+  stmts.append('PREPARE ' + ps + ' AS \n' + formatted_qry)
+  stmts.append(exec_stmt)
+  stmts.append('\n\n') 
+
+f = open('ps_' + sys.argv[1], 'w')
+for stmt in stmts:
+  f.write(stmt)
+
+
